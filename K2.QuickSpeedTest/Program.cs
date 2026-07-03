@@ -120,8 +120,8 @@ internal static class Program
     {
         if (!File.Exists(configFilePath))
         {
-            throw new FileNotFoundException(
-                $"Configuration file '{configFilePath}' was not found. Copy appSettings.example.json to appSettings.json and update it for your K2 environment.");
+            Console.WriteLine($"Configuration file '{configFilePath}' was not found. Enter connection settings for this run.");
+            return ReadSettings();
         }
 
         AppSettings? settings = JsonSerializer.Deserialize<AppSettings>(
@@ -146,6 +146,23 @@ internal static class Program
         return settings;
     }
 
+    private static AppSettings ReadSettings()
+    {
+        string host = ReadString("Enter K2 server", "localhost");
+        string userId = ReadString("Enter username", "administrator");
+        string password = ReadPassword("Enter password");
+        bool integrated = ReadBool("Use integrated authentication", true);
+
+        return new AppSettings
+        {
+            Host = host,
+            Port = 5252,
+            Integrated = integrated,
+            UserID = userId,
+            Password = password
+        };
+    }
+
     private static int ReadPositiveInt(string prompt)
     {
         while (true)
@@ -159,6 +176,84 @@ internal static class Program
             }
 
             Console.WriteLine("Enter a whole number greater than zero.");
+        }
+    }
+
+    private static string ReadString(string prompt, string defaultValue)
+    {
+        Console.Write($"{prompt} [{defaultValue}]: ");
+        string? value = Console.ReadLine();
+        return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
+    }
+
+    private static bool ReadBool(string prompt, bool defaultValue)
+    {
+        string defaultText = defaultValue ? "Y/n" : "y/N";
+
+        while (true)
+        {
+            Console.Write($"{prompt} [{defaultText}]: ");
+            string? value = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return defaultValue;
+            }
+
+            switch (value.Trim().ToLowerInvariant())
+            {
+                case "y":
+                case "yes":
+                case "true":
+                case "1":
+                    return true;
+                case "n":
+                case "no":
+                case "false":
+                case "0":
+                    return false;
+                default:
+                    Console.WriteLine("Enter yes or no.");
+                    break;
+            }
+        }
+    }
+
+    private static string ReadPassword(string prompt)
+    {
+        Console.Write($"{prompt}: ");
+
+        if (Console.IsInputRedirected)
+        {
+            return Console.ReadLine() ?? string.Empty;
+        }
+
+        string password = string.Empty;
+
+        while (true)
+        {
+            ConsoleKeyInfo key = Console.ReadKey(intercept: true);
+
+            if (key.Key == ConsoleKey.Enter)
+            {
+                Console.WriteLine();
+                return password;
+            }
+
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (password.Length > 0)
+                {
+                    password = password.Substring(0, password.Length - 1);
+                }
+
+                continue;
+            }
+
+            if (!char.IsControl(key.KeyChar))
+            {
+                password += key.KeyChar;
+            }
         }
     }
 

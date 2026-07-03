@@ -10,9 +10,9 @@ This project is intended to be distributed as a pre-built Windows release zip so
 2. Extract the zip on a Windows machine that can reach the K2 Host Server.
 3. Import `QuickSpeedTest v0.1.kspx` from the extracted folder into the target K2 environment.
 4. Run `setup-database.sql` from the extracted folder against SQL Server to create the `QuickSpeedTest` database and stored procedure.
-5. Copy `appSettings.example.json` to `appSettings.json` in the extracted release folder.
-6. Edit `appSettings.json` for your environment.
-7. Run `K2.QuickSpeedTest.exe`.
+5. Run `K2.QuickSpeedTest.exe`.
+
+If `appSettings.json` is not present, the app prompts for connection details when it starts. To avoid entering them each time, copy `appSettings.example.json` to `appSettings.json` in the extracted release folder and edit it for your environment.
 
 The pre-built executable targets .NET Framework 4.8. This is intentional because the K2 client assemblies used by the tool are .NET Framework-era assemblies. If the app exits with a shutdown-time `SEHException`, make sure you are using the current release zip from `assets/`.
 
@@ -29,6 +29,14 @@ Example `appSettings.json`:
 ```
 
 Do not commit `appSettings.json`. It is ignored by Git because it can contain credentials.
+
+When no `appSettings.json` file exists, the interactive defaults are:
+
+```text
+Server: localhost
+Username: administrator
+Integrated authentication: true
+```
 
 ## Running A Test
 
