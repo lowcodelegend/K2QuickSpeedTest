@@ -8,7 +8,7 @@ This project is intended to be distributed as a pre-built Windows release zip so
 
 1. Download `assets/QuickSpeedTest-win-x64.zip` from this repository, or download the same zip from the GitHub release if one has been published.
 2. Extract the zip on a Windows machine that can reach the K2 Host Server.
-3. Import `QuickSpeedTest v0.1.kspx` from the extracted folder into the target K2 environment.
+3. Import `QuickSpeedTest v0.2.kspx` from the extracted folder into the target K2 environment.
 4. Run `setup-database.sql` from the extracted folder against SQL Server to create the `QuickSpeedTest` database and stored procedure.
 5. Run `K2.QuickSpeedTest.exe`.
 
@@ -243,7 +243,7 @@ Use deletes carefully if the database is shared with other testers.
 
 ## Included Files
 
-- `QuickSpeedTest v0.1.kspx`: K2 package containing the sample workflows.
+- `QuickSpeedTest v0.2.kspx`: K2 package containing the `Throughput-SQL` and `Throughput-Task` sample workflows.
 - `scripts/setup-database.sql`: SQL database/table/procedure setup.
 - `scripts/query-results.sql`: throughput summary query.
 - `K2.QuickSpeedTest`: source code for the console runner.
@@ -283,7 +283,7 @@ Copy-Item .\artifacts\QuickSpeedTest-win-x64.zip .\assets\QuickSpeedTest-win-x64
 Create a GitHub release with the pre-built zip attached:
 
 ```powershell
-.\scripts\create-github-release.ps1 -Tag v0.1.0 -Title "K2 QuickSpeedTest v0.1.0"
+.\scripts\create-github-release.ps1 -Tag v0.2.0 -Title "K2 QuickSpeedTest v0.2.0"
 ```
 
 ## Security
