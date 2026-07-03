@@ -44,7 +44,7 @@ internal static class Program
         int successCount = 0;
         int failureCount = 0;
         object consoleLock = new();
-        List<Task> tasks = [];
+        List<Task> tasks = new();
 
         for (int i = 0; i < threadCount; i++)
         {
@@ -201,10 +201,40 @@ internal static class Program
         }
     }
 
-    private sealed record SpeedTestResult(int SuccessCount, int FailureCount);
-
-    private sealed record Options(string ConfigFilePath, int? Threads, int? Iterations, string? BatchName, string? ProcessName)
+    private sealed class SpeedTestResult
     {
+        public SpeedTestResult(int successCount, int failureCount)
+        {
+            SuccessCount = successCount;
+            FailureCount = failureCount;
+        }
+
+        public int SuccessCount { get; }
+
+        public int FailureCount { get; }
+    }
+
+    private sealed class Options
+    {
+        private Options(string configFilePath, int? threads, int? iterations, string? batchName, string? processName)
+        {
+            ConfigFilePath = configFilePath;
+            Threads = threads;
+            Iterations = iterations;
+            BatchName = batchName;
+            ProcessName = processName;
+        }
+
+        public string ConfigFilePath { get; }
+
+        public int? Threads { get; }
+
+        public int? Iterations { get; }
+
+        public string? BatchName { get; }
+
+        public string? ProcessName { get; }
+
         public static Options Parse(string[] args)
         {
             string configFilePath = DefaultConfigFilePath;

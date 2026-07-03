@@ -14,6 +14,8 @@ This project is intended to be distributed as a pre-built Windows release zip so
 6. Edit `appSettings.json` for your environment.
 7. Run `K2.QuickSpeedTest.exe`.
 
+The pre-built executable targets .NET Framework 4.8. This is intentional because the K2 client assemblies used by the tool are .NET Framework-era assemblies. If the app exits with a shutdown-time `SEHException`, make sure you are using the current release zip from `assets/`.
+
 Example `appSettings.json`:
 
 ```json
@@ -238,7 +240,8 @@ Most users should use the pre-built zip. Build only if you want to modify the ut
 Prerequisites:
 
 - Windows
-- .NET 8 SDK
+- .NET 8 SDK for building
+- .NET Framework 4.8 runtime for running the built executable
 - K2/Nintex K2 client assemblies installed under `C:\Program Files\K2\Host Server\Bin`
 
 Build:

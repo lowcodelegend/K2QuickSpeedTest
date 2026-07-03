@@ -2,13 +2,13 @@ namespace SpeedTestThroughput;
 
 internal sealed class AppSettings
 {
-    public string Host { get; init; } = "localhost";
+    public string Host { get; set; } = "localhost";
 
-    public uint Port { get; init; } = 5252;
+    public uint Port { get; set; } = 5252;
 
-    public string UserID { get; init; } = string.Empty;
+    public string UserID { get; set; } = string.Empty;
 
-    public string Password { get; init; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
 
-    public bool Integrated { get; init; }
+    public bool Integrated { get; set; }
 }
