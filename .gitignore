@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+.dotnet/
+artifacts/
+publish/
+*.user
+*.suo
+*.rsuser
+.DS_Store
+appSettings.json
+appsettings.json
