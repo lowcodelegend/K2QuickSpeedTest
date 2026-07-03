@@ -11,4 +11,6 @@ internal sealed class AppSettings
     public string Password { get; set; } = string.Empty;
 
     public bool Integrated { get; set; }
+
+    public string SecurityLabelName { get; set; } = string.Empty;
 }

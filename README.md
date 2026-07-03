@@ -24,9 +24,12 @@ Example `appSettings.json`:
   "Port": 5252,
   "UserID": "DOMAIN\\username",
   "Password": "your-password",
-  "Integrated": false
+  "Integrated": false,
+  "SecurityLabelName": ""
 }
 ```
+
+`SecurityLabelName` is optional. Leave it blank to let K2 use the environment's default security label. Set it only when your K2 environment requires a specific label.
 
 Do not commit `appSettings.json`. It is ignored by Git because it can contain credentials.
 
@@ -36,6 +39,7 @@ When no `appSettings.json` file exists, the interactive defaults are:
 Server: localhost
 Username: administrator
 Integrated authentication: true
+Security label: blank, using K2 default
 ```
 
 ## Running A Test

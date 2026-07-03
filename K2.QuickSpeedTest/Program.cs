@@ -25,6 +25,7 @@ internal static class Program
             {
                 Console.WriteLine($"Starting {threadCount * iterations} process instance(s) across {threadCount} thread(s).");
                 Console.WriteLine($"Target server: {settings.Host}:{settings.Port}. Authentication: {(settings.Integrated ? "integrated" : settings.UserID)}.");
+                Console.WriteLine($"Security label: {(string.IsNullOrWhiteSpace(settings.SecurityLabelName) ? "K2 default" : settings.SecurityLabelName)}.");
                 Console.WriteLine($"Process: {processName}. Batch: {batchName}.");
 
                 SpeedTestResult result = RunSpeedTest(threadCount, iterations, batchName, processName, settings);
@@ -143,15 +144,13 @@ internal static class Program
             connectionString.Password = settings.Password;
         }
 
+        if (!string.IsNullOrWhiteSpace(settings.SecurityLabelName))
+        {
+            connectionString.SecurityLabelName = settings.SecurityLabelName;
+        }
+
         Connection connection = new();
-        if (settings.Integrated)
-        {
-            connection.Open(settings.Host);
-        }
-        else
-        {
-            connection.Open(settings.Host, connectionString.ToString());
-        }
+        connection.Open(settings.Host, connectionString.ToString());
 
         return connection;
     }
@@ -268,6 +267,7 @@ internal static class Program
         string userId = ReadString("Enter username", "administrator");
         string password = ReadPassword("Enter password");
         bool integrated = ReadBool("Use integrated authentication", true);
+        string securityLabelName = ReadOptionalString("Enter security label (blank uses K2 default)");
 
         return new AppSettings
         {
@@ -275,7 +275,8 @@ internal static class Program
             Port = 5252,
             Integrated = integrated,
             UserID = userId,
-            Password = password
+            Password = password,
+            SecurityLabelName = securityLabelName
         };
     }
 
@@ -300,6 +301,12 @@ internal static class Program
         Console.Write($"{prompt} [{defaultValue}]: ");
         string? value = Console.ReadLine();
         return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
+    }
+
+    private static string ReadOptionalString(string prompt)
+    {
+        Console.Write($"{prompt}: ");
+        return Console.ReadLine() ?? string.Empty;
     }
 
     private static bool ReadBool(string prompt, bool defaultValue)
