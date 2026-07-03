@@ -69,6 +69,45 @@ Useful options:
 --process, -p      K2 process name or full K2 process path.
 ```
 
+## How The Test Works
+
+QuickSpeedTest measures how quickly K2 can start and complete a simple measured workflow path under concurrent load.
+
+For each requested process instance, the console app:
+
+1. Opens one K2 client connection per worker thread.
+2. Creates a K2 process instance.
+3. Sets two process data fields:
+   - `starttime`: the current UTC time from the client machine, stored as Unix epoch milliseconds.
+   - `batchname`: the test run label.
+4. Starts the process instance.
+5. The supplied `Throughput-SQL` workflow calls `[dbo].[sp_InsertSpeedTestResult]`.
+6. SQL Server inserts a result row with the original start time, batch name, and SQL Server's current UTC end time.
+
+The result is a simple end-to-end measurement of workflow start and straight-through execution into SQL.
+
+The test includes:
+
+- K2 client API overhead
+- K2 authentication/session setup per worker thread
+- process instance creation
+- workflow start handling
+- data field assignment
+- workflow execution through the supplied measured path
+- SmartObject/service broker overhead
+- SQL stored procedure execution
+- SQL insert latency
+
+The test does not measure:
+
+- browser or form load performance
+- user task completion time
+- isolated SQL Server insert performance
+- isolated K2 Host Server performance
+- a full business workflow unless you point the tool at one
+
+The console output reports how many process starts succeeded from the client app's perspective. The SQL results show how many workflow instances actually reached the measured SQL logging step. When interpreting a run, treat the SQL row count as the authoritative completion count.
+
 ## Choosing Test Values
 
 Start with a small test to confirm the setup is working:
@@ -130,6 +169,8 @@ TotalProcesses / (TotalDurationMS / 1000)
 ```
 
 Higher is better when comparing the same process type under similar conditions.
+
+`StartTime` is captured by the client machine running `K2.QuickSpeedTest.exe`. `EndTime` is captured by SQL Server. If those machines have different clocks, very small tests can produce slightly misleading durations. Larger test runs reduce the impact of small clock differences.
 
 ### Example Interpretation
 
