@@ -6,7 +6,7 @@ This project is intended to be distributed as a pre-built Windows release zip so
 
 ## Quick Start With The Pre-Built Release
 
-1. Download `QuickSpeedTest-win-x64.zip` from the GitHub release. In this prepared working copy, the same zip is generated at `artifacts/QuickSpeedTest-win-x64.zip`.
+1. Download `assets/QuickSpeedTest-win-x64.zip` from this repository, or download the same zip from the GitHub release if one has been published.
 2. Extract the zip on a Windows machine that can reach the K2 Host Server.
 3. Import `QuickSpeedTest v0.1.kspx` from the extracted folder into the target K2 environment.
 4. Run `setup-database.sql` from the extracted folder against SQL Server to create the `QuickSpeedTest` database and stored procedure.
@@ -254,6 +254,12 @@ Create a release zip:
 ```
 
 The generated zip is written to `artifacts/QuickSpeedTest-win-x64.zip`.
+
+The repository copy used by end users is stored at `assets/QuickSpeedTest-win-x64.zip`. After publishing a new build, copy the generated zip into `assets/` before committing:
+
+```powershell
+Copy-Item .\artifacts\QuickSpeedTest-win-x64.zip .\assets\QuickSpeedTest-win-x64.zip -Force
+```
 
 Create a GitHub release with the pre-built zip attached:
 
