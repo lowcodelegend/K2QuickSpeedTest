@@ -67,6 +67,10 @@ It can also run non-interactively:
 .\K2.QuickSpeedTest.exe --threads 10 --iterations 50 --batch "baseline-001" --process "Throughput-SQL"
 ```
 
+When a run starts, the app prints the target server, authentication mode, selected process, batch name, and per-thread connection progress. During larger runs it periodically reports how many process instances have started.
+
+If a thread cannot connect to K2 or a process start fails, the app prints the underlying error message and an error summary instead of only reporting a generic failure. If the failure looks authentication-related and the app is running interactively, it prompts for connection settings again and retries the run.
+
 When `--process` does not contain a folder separator, the app prefixes it with `QuickSpeedTest\`. For example, `Throughput-SQL` becomes `QuickSpeedTest\Throughput-SQL`.
 
 Useful options:

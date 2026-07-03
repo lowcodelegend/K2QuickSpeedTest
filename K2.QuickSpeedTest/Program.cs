@@ -21,15 +21,28 @@ internal static class Program
             string batchName = options.BatchName ?? ReadBatchName(threadCount, iterations);
             string processName = options.ProcessName ?? ReadProcessName();
 
-            Console.WriteLine($"Starting {threadCount * iterations} process instance(s) across {threadCount} thread(s).");
-            SpeedTestResult result = RunSpeedTest(threadCount, iterations, batchName, processName, settings);
+            while (true)
+            {
+                Console.WriteLine($"Starting {threadCount * iterations} process instance(s) across {threadCount} thread(s).");
+                Console.WriteLine($"Target server: {settings.Host}:{settings.Port}. Authentication: {(settings.Integrated ? "integrated" : settings.UserID)}.");
+                Console.WriteLine($"Process: {processName}. Batch: {batchName}.");
 
-            Console.WriteLine($"Completed. Successful starts: {result.SuccessCount}. Failed starts: {result.FailureCount}.");
-            return result.FailureCount == 0 ? 0 : 1;
+                SpeedTestResult result = RunSpeedTest(threadCount, iterations, batchName, processName, settings);
+                WriteResultSummary(result);
+
+                if (result.HasAuthenticationFailure && CanPromptForAuthentication())
+                {
+                    Console.WriteLine("The failure looks authentication-related. Re-enter connection settings to try again.");
+                    settings = ReadSettings();
+                    continue;
+                }
+
+                return result.FailureCount == 0 ? 0 : 1;
+            }
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            WriteException(ex);
             return 1;
         }
     }
@@ -44,6 +57,7 @@ internal static class Program
         int successCount = 0;
         int failureCount = 0;
         object consoleLock = new();
+        List<Exception> errors = new();
         List<Task> tasks = new();
 
         for (int i = 0; i < threadCount; i++)
@@ -51,29 +65,66 @@ internal static class Program
             int threadNumber = i + 1;
             tasks.Add(Task.Run(() =>
             {
-                using Connection connection = CreateConnection(settings);
+                Connection? connection = null;
 
-                for (int j = 0; j < iterations; j++)
+                try
                 {
-                    try
+                    lock (consoleLock)
                     {
-                        StartK2Process(batchName, connection, processName);
-                        Interlocked.Increment(ref successCount);
+                        Console.WriteLine($"Thread {threadNumber}: opening K2 connection...");
                     }
-                    catch (Exception ex)
+
+                    connection = CreateConnection(settings);
+
+                    lock (consoleLock)
                     {
-                        Interlocked.Increment(ref failureCount);
-                        lock (consoleLock)
+                        Console.WriteLine($"Thread {threadNumber}: connected.");
+                    }
+
+                    for (int j = 0; j < iterations; j++)
+                    {
+                        try
                         {
-                            Console.Error.WriteLine($"Thread {threadNumber}, iteration {j + 1} failed: {ex.Message}");
+                            StartK2Process(batchName, connection, processName);
+                            int started = Interlocked.Increment(ref successCount);
+
+                            if (started == 1 || started % 25 == 0 || started == threadCount * iterations)
+                            {
+                                lock (consoleLock)
+                                {
+                                    Console.WriteLine($"Started {started} of {threadCount * iterations} process instance(s)...");
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Interlocked.Increment(ref failureCount);
+                            lock (consoleLock)
+                            {
+                                errors.Add(ex);
+                                Console.Error.WriteLine($"Thread {threadNumber}, iteration {j + 1} failed: {GetInnermostMessage(ex)}");
+                            }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Interlocked.Add(ref failureCount, iterations);
+                    lock (consoleLock)
+                    {
+                        errors.Add(ex);
+                        Console.Error.WriteLine($"Thread {threadNumber}: connection failed: {GetInnermostMessage(ex)}");
+                    }
+                }
+                finally
+                {
+                    connection?.Dispose();
                 }
             }));
         }
 
         Task.WaitAll(tasks.ToArray());
-        return new SpeedTestResult(successCount, failureCount);
+        return new SpeedTestResult(successCount, failureCount, errors);
     }
 
     private static Connection CreateConnection(AppSettings settings)
@@ -144,6 +195,71 @@ internal static class Program
         }
 
         return settings;
+    }
+
+    private static void WriteResultSummary(SpeedTestResult result)
+    {
+        Console.WriteLine($"Completed. Successful starts: {result.SuccessCount}. Failed starts: {result.FailureCount}.");
+
+        if (result.Errors.Count == 0)
+        {
+            return;
+        }
+
+        Console.Error.WriteLine("Error summary:");
+        foreach (IGrouping<string, Exception> group in result.Errors.GroupBy(GetInnermostMessage).Take(5))
+        {
+            Console.Error.WriteLine($"- {group.Count()}x {group.Key}");
+        }
+    }
+
+    private static void WriteException(Exception exception)
+    {
+        if (exception is AggregateException aggregateException)
+        {
+            foreach (Exception innerException in aggregateException.Flatten().InnerExceptions)
+            {
+                Console.Error.WriteLine(GetInnermostMessage(innerException));
+            }
+
+            return;
+        }
+
+        Console.Error.WriteLine(GetInnermostMessage(exception));
+    }
+
+    private static string GetInnermostMessage(Exception exception)
+    {
+        Exception current = exception;
+        while (current.InnerException is not null)
+        {
+            current = current.InnerException;
+        }
+
+        return current.Message;
+    }
+
+    private static bool CanPromptForAuthentication()
+    {
+        return !Console.IsInputRedirected;
+    }
+
+    private static bool LooksLikeAuthenticationFailure(Exception exception)
+    {
+        string message = exception.ToString();
+        return ContainsIgnoreCase(message, "auth")
+            || ContainsIgnoreCase(message, "login")
+            || ContainsIgnoreCase(message, "logon")
+            || ContainsIgnoreCase(message, "credential")
+            || ContainsIgnoreCase(message, "password")
+            || ContainsIgnoreCase(message, "unauthorized")
+            || ContainsIgnoreCase(message, "access denied")
+            || ContainsIgnoreCase(message, "401");
+    }
+
+    private static bool ContainsIgnoreCase(string value, string search)
+    {
+        return value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static AppSettings ReadSettings()
@@ -298,15 +414,20 @@ internal static class Program
 
     private sealed class SpeedTestResult
     {
-        public SpeedTestResult(int successCount, int failureCount)
+        public SpeedTestResult(int successCount, int failureCount, IReadOnlyList<Exception> errors)
         {
             SuccessCount = successCount;
             FailureCount = failureCount;
+            Errors = errors;
         }
 
         public int SuccessCount { get; }
 
         public int FailureCount { get; }
+
+        public IReadOnlyList<Exception> Errors { get; }
+
+        public bool HasAuthenticationFailure => Errors.Any(LooksLikeAuthenticationFailure);
     }
 
     private sealed class Options
